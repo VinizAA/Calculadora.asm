@@ -1,3 +1,5 @@
+TITLE Vinícius Afonso Alvarez - RA: 22006181
+
 .model small
 .data
     esc_perg DB "Escolha a opcao desejada:$", 10
@@ -13,6 +15,7 @@
     erro DB 10, "Ocorreu um erro, tente novamente$"
 
     resultado DB "Resultado = $"
+    menos DB 10, "-$"
 
 .code
 main PROC
@@ -44,7 +47,7 @@ HEAD:
     MOV BL, AL
 ;FIM CABEÇALHO
 
-;VERIFICA A ESCOLHA
+;INICIO VERIFICA A ESCOLHA
 COMEÇO:
     CMP BL, '1'
     JNE n_adição ;se não for igual, verifica o próximo
@@ -74,10 +77,13 @@ COMEÇO:
     MOV AH, 02h
     MOV DL, 10
     INT 21h
-    CALL HEAD
+    CALL HEAD ;se deu errado, volta pro cabeçalho
+;FIM VERIFICA A ESCOLHA
 
-mais PROC
+;INICIO SOMA
+mais PROC 
 adição:
+;le o primeiro numero
     MOV AH, 02h
     MOV DL, 10
     INT 21h
@@ -89,8 +95,9 @@ adição:
     INT 21h
     MOV AH, 01h
     INT 21h
-    MOV BL, AL
+    MOV BL, AL ;o primeiro numero guardado em BL
 
+;le o segundo numero
     LEA DX, num2
     MOV AH, 09h
     INT 21h
@@ -99,8 +106,9 @@ adição:
     INT 21h
     MOV AH, 01h
     INT 21h
-    MOV BH, AL
+    MOV BH, AL ;o segundo numero guardado em BH
 
+;imprime o resultado
     MOV AH, 02h
     MOV DL, 10
     INT 21h
@@ -108,13 +116,15 @@ adição:
     MOV AH, 09h
     INT 21h
     ADD BH, BL
-    SUB BH, 30h
+    AND BH, 0Fh ;transforma em numeral
     MOV DL, BH
     MOV AH, 02h
     INT 21h
     JMP FIM
 mais ENDP
+;FIM SOMA
 
+;INICIO SUBTRAÇÃO
 menos PROC
 subtração:
     MOV AH, 02h
@@ -153,7 +163,9 @@ subtração:
     INT 21h
     JMP FIM
 menos ENDP
+;FIM SUBTRAÇÃO
 
+;INICIO MULTIPLICAÇÃO
 vezes PROC
 multiplicação:
     MOV AH, 02h
@@ -178,7 +190,9 @@ multiplicação:
     INT 21h
     JMP FIM
 vezes ENDP
+;FIM MULTIPLICAÇÃO
 
+;INICIO DIVISÃO
 dividir PROC
 divisão:
     LEA DX, esc_div
@@ -186,6 +200,7 @@ divisão:
     INT 21h
     JMP FIM
 dividir ENDP
+;FIM DIVISÃO
 
 FIM:
     MOV ah, 4ch
