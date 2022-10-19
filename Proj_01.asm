@@ -2,41 +2,51 @@ TITLE Vinícius Afonso Alvarez - RA: 22006181
 
 .model small
 .data
-    esc_perg DB "Escolha a opcao desejada:$", 10
-    esc_soma DB 10, "[1] Adicao$"
-    esc_sub DB 10, "[2] Subtracao$"
-    esc_mult DB 10, "[3] Multiplicacao$"
-    esc_div DB 10, "[4] Divisao$", 10
+    opc_perg DB "Escolha a opcao desejada:$", 10
+    opc_soma DB 10, "[1] Adicao (+)$"
+    opc_sub DB 10, "[2] Subtracao (-)$"
+    opc_mult DB 10, "[3] Multiplicacao (*)$"
+    opc_div DB 10, "[4] Divisao (/)$", 10
     escolha DB 10, ">>> $"
 
     num1 DB 10, "Digite o primeiro numero (0 a 9)$"
     num2 DB 10, "Digite o segundo numero (0 a 9)$"
 
-    erro DB 10, "Ocorreu um erro, tente novamente$"
+    erro DB 10, "OCORREU UM ERRO, TENTE NOVAMENTE$"
+    reinicia DB 10, "Deseja realizar outra operacao?$"
+    opc_sim DB 10, "[1] Sim$"
+    opc_nao DB 10, "[2] Nao$"
 
     resultado DB "Resultado = $"
-    menos DB 10, "-$"
+    sinal_sub DB "-$"
+    saindo DB 10, "SAINDO...$"
 
 .code
+    PULALINHA MACRO
+        MOV AH,02
+        MOV DL,10
+        INT 21h
+    ENDM
+
 main PROC
     MOV AX, @data
     MOV DS, AX
 
 ;INICIO CABEÇALHO
 HEAD:
-    LEA DX, esc_perg 
+    LEA DX, opc_perg 
     MOV AH, 09h
     INT 21h
-    LEA DX, esc_soma
+    LEA DX, opc_soma
     MOV AH, 09h
     INT 21h
-    LEA DX, esc_sub
+    LEA DX, opc_sub
     MOV AH, 09h
     INT 21h
-    LEA DX, esc_mult
+    LEA DX, opc_mult
     MOV AH, 09h
     INT 21h
-    LEA DX, esc_div
+    LEA DX, opc_div
     MOV AH, 09h
     INT 21h
     LEA DX, escolha
@@ -44,6 +54,11 @@ HEAD:
     INT 21h
     MOV AH, 01h
     INT 21h
+    CMP AL, 27
+    JNE continua1
+    JMP FIM
+
+ continua1:
     MOV BL, AL
 ;FIM CABEÇALHO
 
@@ -68,15 +83,12 @@ COMEÇO:
     JNE n_divisão ;se não for igual, verifica o próximo
     CALL divisão ;se for igual, chama função
     n_divisão: ;se não for igual, dá erro e reinicia
-    MOV AH, 02h
-    MOV DL, 10
-    INT 21h
+    
+    PULALINHA
     LEA DX, erro
     MOV AH, 09h
     INT 21h
-    MOV AH, 02h
-    MOV DL, 10
-    INT 21h
+    PULALINHA
     CALL HEAD ;se deu errado, volta pro cabeçalho
 ;FIM VERIFICA A ESCOLHA
 
@@ -84,9 +96,7 @@ COMEÇO:
 mais PROC 
 adição:
 ;le o primeiro numero
-    MOV AH, 02h
-    MOV DL, 10
-    INT 21h
+    PULALINHA
     LEA DX, num1
     MOV AH, 09h
     INT 21h
@@ -95,6 +105,7 @@ adição:
     INT 21h
     MOV AH, 01h
     INT 21h
+    AND AL, 0FH ;transforma em numeral
     MOV BL, AL ;o primeiro numero guardado em BL
 
 ;le o segundo numero
@@ -106,30 +117,30 @@ adição:
     INT 21h
     MOV AH, 01h
     INT 21h
+    AND AL, 0FH ;transforma em numeral
     MOV BH, AL ;o segundo numero guardado em BH
 
 ;imprime o resultado
-    MOV AH, 02h
-    MOV DL, 10
-    INT 21h
+    PULALINHA
     LEA DX, resultado
     MOV AH, 09h
     INT 21h
     ADD BH, BL
-    AND BH, 0Fh ;transforma em numeral
+    OR BH, 30h ;transforma em numeral
     MOV DL, BH
     MOV AH, 02h
     INT 21h
-    JMP FIM
+
+;reinicia
+    CALL RECOMEÇO
 mais ENDP
 ;FIM SOMA
 
 ;INICIO SUBTRAÇÃO
 menos PROC
 subtração:
-    MOV AH, 02h
-    MOV DL, 10
-    INT 21h
+;le o primeiro numero
+    PULALINHA
     LEA DX, num1
     MOV AH, 09h
     INT 21h
@@ -138,8 +149,15 @@ subtração:
     INT 21h
     MOV AH, 01h
     INT 21h
-    MOV BL, AL
+    CMP AL, 27
+    JNE continua2
+    JMP FIM
 
+continua2:
+    AND AL, 0FH ;transforma em numeral
+    MOV BL, AL ;BL armazena o primeiro numero
+
+;le o segundo numero
     LEA DX, num2
     MOV AH, 09h
     INT 21h
@@ -148,29 +166,45 @@ subtração:
     INT 21h
     MOV AH, 01h
     INT 21h
-    MOV BH, AL
+    CMP AL, 27
+    JNE continua3
+    JMP FIM
 
-    MOV AH, 02h
-    MOV DL, 10
-    INT 21h
+continua3:
+    AND AL, 0FH ;transforma em numeral
+    MOV BH, AL ;BH armazena o segundo numero
+
+;imprime o resultado
+    PULALINHA
     LEA DX, resultado
     MOV AH, 09h
     INT 21h
-    SUB BH, BL
-    SUB BH, 30h
-    MOV DL, BH
+    SUB BL, BH
+    OR BL, 30h ;transforma em numeral
+    JS negativo
+    MOV DL, BL 
     MOV AH, 02h
     INT 21h
-    JMP FIM
+
+negativo:
+    LEA DX, sinal_sub
+    MOV AH, 09h
+    INT 21h
+    AND BL, 0Fh ;transforma em numeral
+    MOV DL, BL
+    MOV AH, 02h
+    INT 21h
+
+;reinicia
+    CALL RECOMEÇO
 menos ENDP
 ;FIM SUBTRAÇÃO
 
 ;INICIO MULTIPLICAÇÃO
 vezes PROC
 multiplicação:
-    MOV AH, 02h
-    MOV DL, 10
-    INT 21h
+;le o primeiro numero
+    PULALINHA
     LEA DX, num1
     MOV AH, 09h
     INT 21h
@@ -179,7 +213,15 @@ multiplicação:
     INT 21h
     MOV AH, 01h
     INT 21h
+    CMP AL, 27
+    JNE continua4
+    JMP FIM
+
+continua4:
+    AND AL, 0FH ;transforma em numeral
     MOV BL, AL
+
+;le o segundo numero
     LEA DX, num2
     MOV AH, 09h
     INT 21h
@@ -188,14 +230,34 @@ multiplicação:
     INT 21h
     MOV AH, 01h
     INT 21h
+    CMP AL, 27
+    JNE continua5
     JMP FIM
+
+continua5:
+    AND AL, 0FH ;transforma em numeral
+    MOV BH, AL
+
+;imprime o resultado
+    PULALINHA
+    LEA DX, resultado
+    MOV AH, 09h
+    INT 21h
+    SUB BL, BH
+    OR BL, 30h ;transforma em numeral
+    MOV DL, BL
+    MOV AH, 02h
+    INT 21h
+
+;reinicia
+    CALL RECOMEÇO
 vezes ENDP
 ;FIM MULTIPLICAÇÃO
 
 ;INICIO DIVISÃO
 dividir PROC
 divisão:
-    LEA DX, esc_div
+    LEA DX, opc_div
     MOV AH, 09h
     INT 21h
     JMP FIM
@@ -203,8 +265,44 @@ dividir ENDP
 ;FIM DIVISÃO
 
 FIM:
-    MOV ah, 4ch
+    LEA DX, saindo 
+    MOV AH, 09h
+    INT 21h
+    MOV AH, 4ch
     INT 21h    
-main ENDP
 
+RECOMEÇO:
+    MOV AH, 02h
+    MOV DL, 10
+    INT 21h
+    LEA DX, reinicia
+    MOV AH, 09h
+    INT 21h
+    LEA DX, opc_sim
+    MOV AH, 09h
+    INT 21h
+    LEA DX, opc_nao
+    MOV AH, 09h
+    INT 21h
+    LEA DX, escolha
+    MOV AH, 09h
+    INT 21h
+    MOV AH, 01h
+    INT 21h
+    CMP AL, 27
+    JNE continua6
+    JMP FIM
+
+ continua6:
+    CMP AL, '1'
+    JNE FIM
+    MOV AH, 02h
+    MOV DL, 10
+    INT 21h
+    MOV AH, 02h
+    MOV DL, 10
+    INT 21h
+    JMP HEAD
+
+main ENDP
 end main
