@@ -171,26 +171,26 @@ adição:
     
     ADD BL, BH
 
-    AND BL, 0Fh
     CMP BL, 9
     JLE soma1
     
-    XOR AH, AH
+    XOR AX, AX
     MOV AL, BL
-    MOV CX, 10
-    DIV AL
+    MOV BL, 10
+    DIV BL
 
-    MOV DL, AL
-    OR DL, 30h
+    OR AL, 30h
+    OR AH, 30h
+    MOV BX, AX
+
+    MOV DL, BL
     MOV AH, 02h
     INT 21h
 
-    MOV DL, AH
-    OR DL, 30h
+    MOV DL, BH
     MOV AH, 02h
     INT 21h
-
-    ;JMP FIM
+    JMP RECOMEÇO
 
 soma1:
     OR BH, 30h
@@ -198,7 +198,7 @@ soma1:
     MOV DL, BH
     INT 21h
 ;reinicia
-    CALL RECOMEÇO
+    JMP RECOMEÇO
 mais ENDP
 ;FIM SOMA
 
@@ -245,25 +245,31 @@ continua3:
     LEA DX, resultado
     MOV AH, 09h
     INT 21h
+
+    CMP BL, BH
+    JL negativo1
+
     SUB BL, BH
-    AND BL, 0Fh ;transforma em numeral
-    JS negativo
-    MOV DL, BL 
+
+    MOV DL, BL
+    OR DL, 30h ;transforma em caracter
     MOV AH, 02h
     INT 21h
+    JMP RECOMEÇO
 
-negativo:
+negativo1:
     LEA DX, sinal_sub
     MOV AH, 09h
     INT 21h
-    AND BL, 0Fh ;transforma em numeral
-    MOV DL, BL
+
+    SUB BH, BL
+    MOV DL, BH
+    OR DL, 30h ;transforma em caracter
     MOV AH, 02h
     INT 21h
 
-    JMP FIM
 ;reinicia
-    CALL RECOMEÇO
+    JMP RECOMEÇO
 menos ENDP
 ;FIM SUBTRAÇÃO
 
@@ -286,7 +292,8 @@ multiplicação:
 
 continua4:
     AND AL, 0FH ;transforma em numeral
-    MOV BL, AL
+    MOV BL, AL ;o segundo numero guardado em BL
+
 
 ;le o segundo numero
     LEA DX, num2
@@ -303,21 +310,36 @@ continua4:
 
 continua5:
     AND AL, 0FH ;transforma em numeral
-    MOV BH, AL
+    MOV BH, AL ;o segundo numero guardado em BH
 
 ;imprime o resultado
     PULALINHA
     LEA DX, resultado
     MOV AH, 09h
     INT 21h
-    SUB BL, BH
-    OR BL, 30h ;transforma em numeral
-    MOV DL, BL
-    MOV AH, 02h
-    INT 21h
+
+    XOR DX, DX
+    ADD CX, 4
+LOOPING:
+    RCR BH, 1
+    JC shift
+    SHL DX, 1
+    ADD DX, BL
+    LOOP LOOPING
+
+shift:
+    
+
+
+
+
+
+
+
+
 
 ;reinicia
-    CALL RECOMEÇO
+    JMP RECOMEÇO
 vezes ENDP
 ;FIM MULTIPLICAÇÃO
 
