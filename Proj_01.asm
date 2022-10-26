@@ -3,10 +3,10 @@ TITLE Vinícius Afonso Alvarez - RA: 22006181
 .model small
 .data
     opc_perg DB "Escolha a opcao desejada:$", 10
-    opc_soma DB 10, "[1] Adicao (+)$"
-    opc_sub DB 10, "[2] Subtracao (-)$"
-    opc_mult DB 10, "[3] Multiplicacao (*)$"
-    opc_div DB 10, "[4] Divisao (/)$", 10
+    opc_soma DB 10, "[1] Adicao$"
+    opc_sub DB 10, "[2] Subtracao$"
+    opc_mult DB 10, "[3] Multiplicacao$"
+    opc_div DB 10, "[4] Divisao$", 10
     escolha DB 10, ">> $"
 
     num1 DB 10, "Digite o primeiro numero (0 a 9)$"
@@ -28,9 +28,19 @@ TITLE Vinícius Afonso Alvarez - RA: 22006181
         INT 21h
     ENDM
 
+    ERROR MACRO
+        LEA DX, erro
+        MOV AH, 09h
+        INT 21h
+    ENDM
+
 main PROC
     MOV AX, @data
     MOV DS, AX
+
+    MOV DX, 184Fh
+    MOV BH, 0Bh
+    INT 10h
 
 ;INICIO CABEÇALHO
 HEAD:
@@ -62,7 +72,7 @@ HEAD:
     MOV BL, AL
 ;FIM CABEÇALHO
 
-;INICIO VERIFICA ESCOLHA
+;INICIO VERIFICA A ESCOLHA
 COMEÇO:
     CMP BL, '1'
     JNE n_adição ;se não for igual, verifica o próximo
@@ -73,7 +83,6 @@ COMEÇO:
     JNE n_subtração ;se não for igual, verifica o próximo
     CALL subtração ;se for igual, chama função
     n_subtração:
-
     CMP BL, '3'
     JNE n_multiplicação ;se não for igual, verifica o próximo
     CALL multiplicação ;se for igual, chama função
@@ -85,9 +94,7 @@ COMEÇO:
     n_divisão: ;se não for igual, dá erro e reinicia
     
     PULALINHA
-    LEA DX, erro
-    MOV AH, 09h
-    INT 21h
+    ERROR
     PULALINHA
     CALL HEAD ;se deu errado, volta pro cabeçalho
 ;FIM VERIFICA A ESCOLHA
@@ -294,7 +301,6 @@ continua4:
     AND AL, 0FH ;transforma em numeral
     MOV BL, AL ;o segundo numero guardado em BL
 
-
 ;le o segundo numero
     LEA DX, num2
     MOV AH, 09h
@@ -318,18 +324,21 @@ continua5:
     MOV AH, 09h
     INT 21h
 
-    XOR DX, DX
-    ADD CX, 4
+    XOR DH, DH
+    MOV CX, 4
 LOOPING:
-    RCR BH, 1
-    JC shift
-    SHL DX, 1
-    ADD DX, BL
-    LOOP LOOPING
+    SHR BH, 1
+    JNC add0
+    ADD DH, BL
 
-shift:
+add0:
+    SHL BL, 1
+    ADD BH, 0
+    JNZ LOOPING
     
-
+    MOV AH, 09h
+    INT 21h
+    
 
 
 
