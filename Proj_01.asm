@@ -62,7 +62,7 @@ HEAD:
     MOV BL, AL
 ;FIM CABEÇALHO
 
-;INICIO VERIFICA A ESCOLHA
+;INICIO VERIFICA ESCOLHA
 COMEÇO:
     CMP BL, '1'
     JNE n_adição ;se não for igual, verifica o próximo
