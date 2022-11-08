@@ -2,364 +2,453 @@ TITLE Vinícius Afonso Alvarez - RA: 22006181
 
 .model small
 .data
-    opc_perg DB "Escolha a opcao desejada:$", 10
-    opc_soma DB 10, "[1] Adicao$"
-    opc_sub DB 10, "[2] Subtracao$"
-    opc_mult DB 10, "[3] Multiplicacao$"
-    opc_div DB 10, "[4] Divisao$", 10
-    escolha DB 10, ">> $"
+    calc DB "                         CALCULADORA - ASSEMBLE$", 13
+    obs DB 10, "--> A qualquer momento, se desejar sair da calculadora, pressione 'ESC'$", 13
+    opc_perg DB 10, "Escolha a operacao desejada:$", 13
+    opc_soma DB 10, "[1] Adicao$", 13
+    opc_sub DB 10, "[2] Subtracao$", 13
+    opc_mult DB 10, "[3] Multiplicacao$", 13
+    opc_div DB 10, "[4] Divisao$", 13
+    escolha DB 10, ">> $", 13
 
-    num1 DB 10, "Digite o primeiro numero (0 a 9)$"
-    num2 DB 10, "Digite o segundo numero (0 a 9)$"
+    num1 DB 10, "Digite o primeiro numero (0 a 9)$", 13
+    num2 DB 10, "Digite o segundo numero (0 a 9)$", 13
+    quoc DB 10, "Quociente = $", 13
+    rest DB 10, "Resto = $", 13
 
-    erro DB 10, "OCORREU UM ERRO, TENTE NOVAMENTE$"
-    reinicia DB 10, "Deseja realizar outra operacao?$"
-    opc_sim DB 10, "[1] Sim$"
-    opc_nao DB 10, "[2] Nao$"
+    erro DB 10, "O SEGUNDO NUMERO DIGITADO NAO E VALIDO, TENTE NOVAMENTE$", 13
+    errodiv DB 10, 10, "O VALOR DIGITADO EQUIVALE A ZERO, SENDO IMPOSSIVEL REALIZAR A OPERACAO.$"
+    errodiv2 DB 10, "POR FAVOR, DIGITE OUTRO VALOR$", 13
+    reinicia DB 10, "Deseja realizar outra operacao?$", 13
+    opc_sim DB 10, "[1] Sim$", 13
+    opc_nao DB 10, "[2] Nao$", 13
 
-    resultado DB "Resultado = $"
+    resultado DB 10, "Resultado = $", 13
+    resultado2 DB 10, "RESULTADO DA DIVISAO$", 13
     sinal_sub DB "-$"
-    saindo DB 10, "SAINDO...$"
+    saindo DB 10, "FIM DA CALCULADORA$", 13
+    saindo2 DB 10, "SAINDO...$", 13
 
 .code
-    PULALINHA MACRO
-        MOV AH,02
-        MOV DL,10
+    PULALINHA MACRO ;macro de pular linha
+        MOV AH, 02h
+        MOV DL, 10
         INT 21h
     ENDM
 
-    ERROR MACRO
+    LIMPATELA MACRO ;macro para limpar a tela
+        MOV AX, 02h
+        INT 10h
+    ENDM
+
+    ERROR MACRO ;macro de impressão de erro1
         LEA DX, erro
-        MOV AH, 09h
+        MOV AH, 09h ;impressão da mensagem 'erro'
         INT 21h
+        XOR DX, DX
     ENDM
 
-main PROC
-    MOV AX, @data
+    ERROR2 MACRO ;macro de impressão de erro2
+        LEA DX, errodiv
+        MOV AH, 09h ;impressão da mensagem 'errodiv'
+        INT 21h
+        LEA DX, errodiv2
+        MOV AH, 09h ;impressão da mensagem 'errodiv2'
+        INT 21h
+        PULALINHA ;macro para pular linha
+        JMP DIV0 ;pula para o 'DIV0', independentemente 
+    ENDM
+
+main PROC 
+    MOV AX, @data ;inicialização do @data
     MOV DS, AX
 
-    MOV DX, 184Fh
-    MOV BH, 0Bh
-    INT 10h
+    LIMPATELA ;macro para pular linha
+main ENDP
 
 ;INICIO CABEÇALHO
-HEAD:
-    LEA DX, opc_perg 
-    MOV AH, 09h
+CABEÇALHO:
+    LEA DX, calc
+    MOV AH, 09h ;impressão da mensagem 'opc_perg'
+    INT 21h
+    PULALINHA ;macro para pular linha
+    LEA DX, obs
+    MOV AH, 09h ;impressão da mensagem 'opc_perg'
+    INT 21h
+    PULALINHA ;macro para pular linha
+CABEÇALHO2:
+    LEA DX, opc_perg
+    MOV AH, 09h ;impressão da mensagem 'opc_perg'
     INT 21h
     LEA DX, opc_soma
-    MOV AH, 09h
+    MOV AH, 09h ;impressão da mensagem 'opc_soma'
     INT 21h
     LEA DX, opc_sub
-    MOV AH, 09h
+    MOV AH, 09h ;impressão da mensagem 'opc_sub'
     INT 21h
     LEA DX, opc_mult
-    MOV AH, 09h
+    MOV AH, 09h ;impressão da mensagem 'opc_mult'
     INT 21h
     LEA DX, opc_div
-    MOV AH, 09h
+    MOV AH, 09h ;impressão da mensagem 'opc_div'
     INT 21h
     LEA DX, escolha
-    MOV AH, 09h
+    MOV AH, 09h ;impressão da mensagem 'escolha'
     INT 21h
-    MOV AH, 01h
+    MOV AH, 01h ;leitura da operação desejada
     INT 21h
-    CMP AL, 27
-    JNE continua1
-    JMP FIM
-
- continua1:
-    MOV BL, AL
+    CALL CMPESC ;chama o procedimento 'CMPESC'
+    MOV BL, AL ;opção selecionada guardada em BL
 ;FIM CABEÇALHO
 
 ;INICIO VERIFICA A ESCOLHA
-COMEÇO:
-    CMP BL, '1'
+INÍCIO:
+    CMP BL, '1' ;compara com '1'
     JNE n_adição ;se não for igual, verifica o próximo
-    CALL adição ;se for igual, chama função
+    CALL mais ;se for igual, chama função
     n_adição:
 
-    CMP BL, '2'
+    CMP BL, '2' ;compara com '2'
     JNE n_subtração ;se não for igual, verifica o próximo
-    CALL subtração ;se for igual, chama função
+    CALL menos ;se for igual, chama função
     n_subtração:
-    CMP BL, '3'
+
+    CMP BL, '3' ;comapra com '3'
     JNE n_multiplicação ;se não for igual, verifica o próximo
-    CALL multiplicação ;se for igual, chama função
+    CALL vezes ;se for igual, chama função
     n_multiplicação:
 
-    CMP BL, '4'
+    CMP BL, '4' ;compara com '4'
     JNE n_divisão ;se não for igual, verifica o próximo
-    CALL divisão ;se for igual, chama função
+    CALL dividir ;se for igual, chama função
     n_divisão: ;se não for igual, dá erro e reinicia
     
-    PULALINHA
-    ERROR
-    PULALINHA
-    CALL HEAD ;se deu errado, volta pro cabeçalho
+    PULALINHA ;macro para pular linha
+    ERROR ;macro para imprimir erro
+    PULALINHA ;macro para pular linha
+    CALL CABEÇALHO2 ;se deu errado, volta pro 'cabeçalho'
 ;FIM VERIFICA A ESCOLHA
 
-FIM:
-    PULALINHA
-    LEA DX, saindo 
-    MOV AH, 09h
-    INT 21h
-    MOV AH, 4ch
-    INT 21h    
-
-RECOMEÇO:
-    MOV AH, 02h
-    MOV DL, 10
-    INT 21h
+;INICIO DO RECOMEÇO
+RESTART PROC
+    PULALINHA ;macro para pular linha
     LEA DX, reinicia
-    MOV AH, 09h
+    MOV AH, 09h ;impressão da mensagem 'reinicia'
     INT 21h
     LEA DX, opc_sim
-    MOV AH, 09h
+    MOV AH, 09h ;impressão da mensagem 'opc_sim'
     INT 21h
     LEA DX, opc_nao
-    MOV AH, 09h
+    MOV AH, 09h ;impressão da mensagem 'opc_nao'
     INT 21h
     LEA DX, escolha
-    MOV AH, 09h
+    MOV AH, 09h ;impressão da mensagem 'escolha'
     INT 21h
-    MOV AH, 01h
+    MOV AH, 01h ;leitura da operação desejada
     INT 21h
-    CMP AL, 27
-    JNE continua6
-    JMP FIM
+    CALL CMPESC ;chama o procedimento 'CMPESC'
+    CMP AL, '1' ;compara com '1'
+    JNE compdnv ;se não for igual, pula para 'compdnv'
+    LIMPATELA ;macro para limpar a tela
+    CALL CABEÇALHO ;se for igual, chama o procedimento CABEÇALHO
+compdnv:
+    CMP AL, '2' ;compara com '2'
+    JE FIM ;se for igual, pula para 'FIM'
+    ERROR ;se não for igual, verifica o próximo
+    CALL RESTART ;chama o procedimento 'RESTART'
+RET
+RESTART ENDP
+;FIM DO RECOMEÇO
 
- continua6:
-    CMP AL, '1'
-    JNE FIM
-    MOV AH, 02h
-    MOV DL, 10
+;INICIO DO FIM
+FIM PROC
+    PULALINHA
+    LEA DX, saindo 
+    MOV AH, 09h ;impressão da mensagem 'saindo'
     INT 21h
-    MOV AH, 02h
-    MOV DL, 10
+    LEA DX, saindo2
+    MOV AH, 09h ;impressão da mensagem 'saindo2'
     INT 21h
-    JMP HEAD
+    MOV AH, 4Ch ;termina o programa
+    INT 21h
+FIM ENDP
+;FIM DO FIM
 
-main ENDP
+;INICIO CMPESC
+CMPESC PROC 
+    CMP AL, 27 ;compara com o 'ESC'
+    JE FIM ;se for igual, termina o programa
+RET
+CMPESC ENDP
+;FIM CMPESC
 
-;INICIO SOMA
-mais PROC 
-adição:
+;INICIO LEITURA DOS NUMEROS
+leitnum1 PROC
 ;le o primeiro numero
     PULALINHA
     LEA DX, num1
-    MOV AH, 09h
+    MOV AH, 09h ;impressão da mensagem 'num1'
     INT 21h
     LEA DX, escolha
-    MOV AH, 09h
+    MOV AH, 09h ;impressão da mensagem 'escolha'
     INT 21h
-    MOV AH, 01h
+    MOV AH, 01h ;leitura do segundo numero
     INT 21h
+    CALL CMPESC ;chama o procedimento 'CMPESC'
     AND AL, 0Fh ;transforma em numeral
-    MOV BL, AL ;o primeiro numero guardado em BL
-
+RET
+leitnum1 ENDP
+leitnum2 PROC
 ;le o segundo numero
     LEA DX, num2
-    MOV AH, 09h
+    MOV AH, 09h ;impressão da mensagem 'num2'
     INT 21h
     LEA DX, escolha
-    MOV AH, 09h
+    MOV AH, 09h ;impressão da mensagem 'escolha' 
     INT 21h
-    MOV AH, 01h
+    MOV AH, 01h ;leitura do segundo numero
     INT 21h
+    CALL CMPESC ;chama procedimento 'CMPESC'
     AND AL, 0Fh ;transforma em numeral
+RET
+leitnum2 ENDP
+;FIM LEITURA DOS NUMEROS
+
+;INICIO SOMA
+mais PROC 
+;leitura dos numeros
+    CALL leitnum1 ;chama o procedimento 'leitnum1'
+    MOV BL, AL ;o primeiro numero guardado em BL
+    CALL leitnum2 ;chama o procedimento 'leitnum2'
     MOV BH, AL ;o segundo numero guardado em BH
 
 ;imprime o resultado
     PULALINHA
     LEA DX, resultado
-    MOV AH, 09h
+    MOV AH, 09h ;impressão da mensagem 'resultado'
     INT 21h
     
-    ADD BL, BH
+    ADD BL, BH ;soma
 
-    CMP BL, 9
-    JLE soma1
-    
-    XOR AX, AX
+    CMP BL, 9 ;compara com 9
+    JLE soma1 ;se for menor ou igual, pula para 'soma1'
+
+;impressão de dois dígitos
+    XOR AX, AX ;limpa AX
     MOV AL, BL
     MOV BL, 10
-    DIV BL
+    DIV BL ;divide AL (resultado) por 10
 
-    OR AL, 30h
-    OR AH, 30h
-    MOV BX, AX
+    OR AL, 30h ;transforma em caracter
+    OR AH, 30h ;transforma em caracter
+    MOV BX, AX 
 
-    MOV DL, BL
-    MOV AH, 02h
+    MOV DL, BL 
+    MOV AH, 02h ;impressão do primeiro digito
     INT 21h
 
     MOV DL, BH
-    MOV AH, 02h
+    MOV AH, 02h ;impressão do segundo digito
     INT 21h
-    JMP RECOMEÇO
+    JMP RESTART ;pula para o 'RESTART', independentemente
 
 soma1:
-    OR BH, 30h
-    MOV AH, 02h
-    MOV DL, BH
+    OR BL, 30h ;transforma em caracter
+    MOV AH, 02h ;imprime o resultado
+    MOV DL, BL
     INT 21h
-;reinicia
-    JMP RECOMEÇO
+    JMP RESTART ;pula para 'restart', independentemente
+
+RET
 mais ENDP
 ;FIM SOMA
 
 ;INICIO SUBTRAÇÃO
 menos PROC
-subtração:
-;le o primeiro numero
-    PULALINHA
-    LEA DX, num1
-    MOV AH, 09h
-    INT 21h
-    LEA DX, escolha
-    MOV AH, 09h
-    INT 21h
-    MOV AH, 01h
-    INT 21h
-    CMP AL, 27
-    JNE continua2
-    JMP FIM
+    ;leitura dos numeros
+        CALL leitnum1 ;chama o procedimento 'leitnum1'
+        MOV BL, AL ;o primeiro numero guardado em BL
+        CALL leitnum2 ;chama o procedimento 'leitnum2'
+        MOV BH, AL ;o segundo numero guardado em BH
 
-continua2:
-    AND AL, 0FH ;transforma em numeral
-    MOV BL, AL ;BL armazena o primeiro numero
+    ;imprime o resultado
+        PULALINHA ;macro para pular linha
+        LEA DX, resultado
+        MOV AH, 09h ;impressão da mensagem 'resultado'
+        INT 21h
 
-;le o segundo numero
-    LEA DX, num2
-    MOV AH, 09h
-    INT 21h
-    LEA DX, escolha
-    MOV AH, 09h
-    INT 21h
-    MOV AH, 01h
-    INT 21h
-    CMP AL, 27
-    JNE continua3
-    JMP FIM
+        CMP BL, BH ;compara os dois numeros
+        JL negativo1 ;se BL (primeiro numero) for menor que BH (segundo numero), pula para 'negativo1'
 
-continua3:
-    AND AL, 0Fh ;transforma em numeral
-    MOV BH, AL ;BH armazena o segundo numero
+        SUB BL, BH ;se não for menor, retira BH (segundo numero) de BL (primeiro numero)
 
-;imprime o resultado
-    PULALINHA
-    LEA DX, resultado
-    MOV AH, 09h
-    INT 21h
+        MOV DL, BL
+        OR DL, 30h ;transforma em caracter
+        MOV AH, 02h ;impressão do resultado
+        INT 21h
+        JMP RESTART ;pula para 'restart', independentemente
 
-    CMP BL, BH
-    JL negativo1
+    negativo1:
+        LEA DX, sinal_sub
+        MOV AH, 09h ;impressão da mensagem 'sinal_sub'
+        INT 21h
 
-    SUB BL, BH
-
-    MOV DL, BL
-    OR DL, 30h ;transforma em caracter
-    MOV AH, 02h
-    INT 21h
-    JMP RECOMEÇO
-
-negativo1:
-    LEA DX, sinal_sub
-    MOV AH, 09h
-    INT 21h
-
-    SUB BH, BL
-    MOV DL, BH
-    OR DL, 30h ;transforma em caracter
-    MOV AH, 02h
-    INT 21h
-
-;reinicia
-    JMP RECOMEÇO
+        SUB BH, BL ;retira BL (primeiro numero) de BH (segundo numero)
+        MOV DL, BH
+        OR DL, 30h ;transforma em caracter
+        MOV AH, 02h ;impressão do resultado
+        INT 21h
+        JMP RESTART ;pula para 'restart', independentemente
+RET
 menos ENDP
 ;FIM SUBTRAÇÃO
 
 ;INICIO MULTIPLICAÇÃO
 vezes PROC
-multiplicação:
-;le o primeiro numero
-    PULALINHA
-    LEA DX, num1
-    MOV AH, 09h
-    INT 21h
-    LEA DX, escolha
-    MOV AH, 09h
-    INT 21h
-    MOV AH, 01h
-    INT 21h
-    CMP AL, 27
-    JNE continua4
-    JMP FIM
+    ;leitura dos numeros
+        CALL leitnum1 ;chama o procedimento 'leitnum1'
+        MOV BL, AL ;o primeiro numero guardado em BL
+        CALL leitnum2 ;chama o procedimento 'leitnum2'
+        MOV BH, AL ;o segundo numero guardado em BH
 
-continua4:
-    AND AL, 0FH ;transforma em numeral
-    MOV BL, AL ;o segundo numero guardado em BL
+    ;multiplicação
+        XOR AH, AH ;limpa AH
+        XOR CX, CX ;limpa CX
+        CLC ;limpa o carry
 
-;le o segundo numero
-    LEA DX, num2
-    MOV AH, 09h
-    INT 21h
-    LEA DX, escolha
-    MOV AH, 09h
-    INT 21h
-    MOV AH, 01h
-    INT 21h
-    CMP AL, 27
-    JNE continua5
-    JMP FIM
+    INICIO:
+        SHR BH, 1 ;desloca BH para direita 1 vez
+        JNC add0 ;se não houver carry (CF=0), pula para add0
+        ADD AH, BL
 
-continua5:
-    AND AL, 0FH ;transforma em numeral
-    MOV BH, AL ;o segundo numero guardado em BH
+    add0:
+        SHL BL, 1 ;desloca BL para direita 1 vez
+        ADD BH, 0
+        JNZ INICIO ;se BH não for zero, pula para 'INICIO'
 
-;imprime o resultado
-    PULALINHA
-    LEA DX, resultado
-    MOV AH, 09h
-    INT 21h
+        MOV CH, AH ;CH armazena o resultado da multiplicação
 
-    XOR DH, DH
-    MOV CX, 4
-LOOPING:
-    SHR BH, 1
-    JNC add0
-    ADD DH, BL
+    ;imprime o resultado
+        PULALINHA ;macro para pular linha
+        LEA DX, resultado
+        MOV AH, 09h ;impressão da mensagem 'resultado'
+        INT 21h
 
-add0:
-    SHL BL, 1
-    ADD BH, 0
-    JNZ LOOPING
-    
-    MOV AH, 09h
-    INT 21h
-    
+        CMP CH, 9 ;compara com 9
+        JLE mult1 ;se for menor ou igual, pula para 'multi1'
 
+    ;imprime dois dígitos
+        XOR AX, AX ;limpa AX
+        MOV AL, CH
+        MOV BL, 10
+        DIV BL ;divide AL (resultado) por 10
 
+        MOV CL, AH
 
+        MOV DL, AL 
+        OR DL, 30h ;transforma em caracter
+        MOV AH, 02h ;impressão do primeiro numero
+        INT 21h
 
+        MOV DL, CL
+        OR DL, 30h ;transforma em caracter
+        MOV AH, 02h ;impressão do segundo numero
+        INT 21h
+        JMP RESTART ;pula para o 'restart', independentemente
 
-
-
-
-;reinicia
-    JMP RECOMEÇO
+    mult1:
+        MOV DL, CH
+        OR DL, 30h ;transforma em caracter
+        MOV AH, 02h ;impressão do resultado
+        INT 21h
+        JMP RESTART ;pula para 'restart', independentemente
+    RET
 vezes ENDP
 ;FIM MULTIPLICAÇÃO
 
 ;INICIO DIVISÃO
 dividir PROC
-divisão:
-    LEA DX, opc_div
-    MOV AH, 09h
-    INT 21h
-    JMP FIM
+    ;le o primeiro numero
+        CALL leitnum1 ;chama o procedimento 'leitnum1'
+        MOV BH, AL ;o primeiro numero (dividendo) guardado em BH
+    DIV0:
+        CALL leitnum2 ;chama o procedimento 'leitnum2'
+        MOV BL, AL ;o segundo numero (divisor) guardado em BL
+
+    ;verifica o divisor
+        CMP BL, 0 ;compara com 0
+        JNE continua0 ;se não for igual, continua para comparar BL
+        ERROR2 ;se for igual, imprime a mensagem 'error2'
+
+        continua0:  
+        CMP BH, 0 ;compara BH (dividendo) com 0
+        JE resul0 ;se for igual, vai para 'resul0'
+
+    ;divisão
+        XCHG BH, BL ;BH e Bl trocam de valor
+        MOV CX, 9 
+        XOR AX, AX ;limpa AX
+        MOV AL, BL
+
+    VOLTA:
+        SUB AX, BX ;retira BX de AX
+        JNS semsin ;se AX não tiver sinal, pula para 'semsin'
+        ADD AX, BX ;se AX tiver sinal, soma BX em AX
+        MOV DH, 0
+        JMP continua ;pula para o 'continua', independentemente
+
+    SEMSIN:
+        MOV DH, 01
+
+    CONTINUA:
+        SHL DL, 1 ;desloca DL para esquerda 1 vez
+        OR DL, DH
+        SHR BX, 1 ;desloca Bx para direita 1 vez
+        LOOP VOLTA ;pula para 'VOLTA' e decrementa CX
+        PULALINHA ;macro para pular linha
+
+        LEA DX, resultado2
+        MOV AH, 09h ;impressão da mensagem 'resultado2'
+        INT 21h
+
+        MOV CH, DL ;CH recebe o quociente
+        MOV CL, AL ;CL recebe o resto
+
+    ;impressão do quociente
+        LEA DX, quoc
+        MOV AH, 09h ;impressão da mensagem 'quoc'
+        INT 21h
+
+        OR CH, 30h ;transforma em caracter
+        MOV DL, CH
+        MOV AH, 02h ;impressão do quociente
+        INT 21h
+
+    ;impressão do resto
+        LEA DX, rest
+        MOV AH, 09h ;impressão da mensagem 'rest'
+        INT 21h
+
+        OR CL, 30h ;transforma em caracter
+        MOV DL, CL
+        MOV AH, 02h ;impressão do resto
+        INT 21H
+
+        JMP RESTART ;pula para o 'RESTART', independentemente
+
+    ;impressão do resultado = 0
+    resul0:
+        PULALINHA ;macro para pular linha
+        LEA DX, resultado
+        MOV AH, 09h ;impressão da mensagem 'resultado'
+        INT 21h
+
+        MOV DL, 0
+        OR DL, 30h ;transforma em caracter
+        MOV AH, 02h ;imprime o resultado 0
+        INT 21h
+        
+        JMP RESTART ;pula para o 'RESTART', independentemente
 dividir ENDP
 ;FIM DIVISÃO
-
 end main
